@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Expense Splitter</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text: #111827;
+            --border: #E5E7EB;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 { text-align: center; }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #4338CA; }
+        ul { list-style-type: none; padding: 0; }
+        li {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+        li:last-child { border-bottom: none; }
+        .positive { color: #059669; font-weight: bold; }
+        .negative { color: #DC2626; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>✈️ TripSplit</h1>
+
+    <div class="card">
+        <h2>1. Add Trip Members</h2>
+        <form id="addUserForm">
+            <input type="text" id="userName" placeholder="Enter name (e.g., Alice)" required>
+            <button type="submit">Add Member</button>
+        </form>
+        <ul id="userList"></ul>
+    </div>
+
+    <div class="card">
+        <h2>2. Add an Expense</h2>
+        <form id="addExpenseForm">
+            <input type="text" id="expenseDesc" placeholder="What was it for? (e.g., Dinner)" required>
+            <input type="number" id="expenseAmount" placeholder="Total Amount ($)" step="0.01" required>
+            <select id="expensePayer" required>
+                <option value="" disabled selected>Who paid?</option>
+            </select>
+            <button type="submit">Record Expense</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>3. Who Owes Whom?</h2>
+        <ul id="settlementList">
+            <li><em>Add members and expenses to see balances.</em></li>
+        </ul>
+    </div>
+
+    <script>
+        // State Management
+        let users = [];
+        let expenses = [];
+
+        // DOM Elements
+        const userForm = document.getElementById('addUserForm');
+        const expenseForm = document.getElementById('addExpenseForm');
+        const userList = document.getElementById('userList');
+        const expensePayerSelect = document.getElementById('expensePayer');
+        const settlementList = document.getElementById('settlementList');
+
+        // Add User Logic
+        userForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('userName');
+            const name = nameInput.value.trim();
+            
+            if (name && !users.includes(name)) {
+                users.push(name);
+                updateUserUI();
+                calculateBalances();
+                nameInput.value = '';
+            }
+        });
+
+        // Add Expense Logic
+        expenseForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (users.length === 0) {
+                alert("Please add members to the trip first!");
+                return;
+            }
+
+            const desc = document.getElementById('expenseDesc').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const payer = document.getElementById('expensePayer').value;
+
+            expenses.push({ desc, amount, payer });
+            calculateBalances();
+            
+            document.getElementById('expenseDesc').value = '';
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expensePayer').value = '';
+        });
+
+        // Update User List & Dropdown
+        function updateUserUI() {
+            userList.innerHTML = '';
+            expensePayerSelect.innerHTML = '<option value="" disabled selected>Who paid?</option>';
+            
+            users.forEach(user => {
+                // Update List
+                const li = document.createElement('li');
+                li.textContent = user;
+                userList.appendChild(li);
+
+                // Update Dropdown
+                const option = document.createElement('option');
+                option.value = user;
+                option.textContent = user;
+                expensePayerSelect.appendChild(option);
+            });
+        }
+
+        // The Core Logic: Calculate Balances
+        function calculateBalances() {
+            if (users.length === 0) return;
+
+            // Step 1: Initialize balances to 0
+            let balances = {};
+            users.forEach(user => balances[user] = 0);
+
+            // Step 2: Calculate net balances based on expenses
+            expenses.forEach(exp => {
+                const splitAmount = exp.amount / users.length;
+                
+                // The payer gets credited the full amount
+                balances[exp.payer] += exp.amount;
+                
+                // Everyone (including the payer) gets debited their split share
+                users.forEach(user => {
+                    balances[user] -= splitAmount;
+                });
+            });
+
+            // Step 3: Render the balances to the UI
+            settlementList.innerHTML = '';
+            let isSettled = true;
+
+            for (const [user, balance] of Object.entries(balances)) {
+                if (Math.abs(balance) > 0.01) { // Ignoring tiny rounding errors
+                    isSettled = false;
+                    const li = document.createElement('li');
+                    
+                    if (balance > 0) {
+                        li.innerHTML = `<span>${user}</span> <span class="positive">gets back $${balance.toFixed(2)}</span>`;
+                    } else {
+                        li.innerHTML = `<span>${user}</span> <span class="negative">owes $${Math.abs(balance).toFixed(2)}</span>`;
+                    }
+                    settlementList.appendChild(li);
+                }
+            }
+
+            if (isSettled && expenses.length > 0) {
+                settlementList.innerHTML = '<li><em>Everyone is settled up!</em></li>';
+            } else if (expenses.length === 0 && users.length > 0) {
+                 settlementList.innerHTML = '<li><em>No expenses yet.</em></li>';
+            }
+        }
+    </script>
+</body>
+</html>
