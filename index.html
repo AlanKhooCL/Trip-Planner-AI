@@ -176,10 +176,26 @@
         }
 
         async function fetchTrips() {
-            if (GAS_WEB_APP_URL === "https://script.google.com/macros/s/AKfycbypxapeVVtaUud1MGHaJbNtFHMHc7XHt17aGb8RTL_ikH7PlP1NzQoCSfL3KZXTV8IC/exec") return;
+            console.log("1. Starting fetchTrips...");
+            console.log("2. Using URL:", GAS_WEB_APP_URL);
+            
+            if (!GAS_WEB_APP_URL.startsWith("https://script.google.com/")) {
+                console.log("3. URL is not a valid Google Script URL. Stopping.");
+                document.getElementById('saved-trips-dropdown').innerHTML = '<option value="">Invalid Google Script URL</option>';
+                return;
+            }
+
             try {
-                const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'getTrips' }) });
+                console.log("4. Sending request to Google Sheets...");
+                const response = await fetch(GAS_WEB_APP_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'getTrips' }) 
+                });
+                
+                console.log("5. Got response from server. Parsing JSON...");
                 const result = await response.json();
+                console.log("6. Final data received:", result);
+                
                 const dropdown = document.getElementById('saved-trips-dropdown');
                 if (result.success && result.trips.length > 0) {
                     dropdown.innerHTML = result.trips.map(t => `<option value="${t}">${t}</option>`).join('');
@@ -187,7 +203,10 @@
                 } else {
                     dropdown.innerHTML = '<option value="">No trips saved yet</option>';
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("Fetch failed hard:", err); 
+                document.getElementById('saved-trips-dropdown').innerHTML = '<option value="">Network connection failed</option>';
+            }
         }
 
         async function loadPastTrip() {
