@@ -1141,10 +1141,10 @@ function renderTimeline() {
 
         (day.events || []).forEach((event, idx) => {
             const safeLink = sanitizeURL(event.link);
-            const safeDesc = sanitizeText(event.desc);
+            const rawDesc = event.desc || '';
             const nameHtml = safeLink
-                ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${safeDesc}</a>`
-                : safeDesc;
+                ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>`
+                : rawDesc;
 
             html += `<div class="event-item">
                 <div class="event-dot" style="border-color:${theme.dot};">
@@ -1239,9 +1239,10 @@ function initMap(dayNum) {
             html: `<div style="background:${theme.mapMarker};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`,
             iconSize: [26, 26], iconAnchor: [13, 13]
         });
+        const cleanDesc = (e.desc || '').replace(/<[^>]*>/g, '');
         L.marker(e.latlng, { icon })
             .addTo(map)
-            .bindPopup(`<strong>${i + 1}. ${sanitizeText(e.desc)}</strong>`);
+            .bindPopup(`<strong>${i + 1}. ${sanitizeText(cleanDesc)}</strong>`);
         latlngs.push(e.latlng);
     });
     if (latlngs.length > 1) {
