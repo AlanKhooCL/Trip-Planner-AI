@@ -93,7 +93,7 @@
         }
 
         .field-label {
-            font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em;
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
             text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block;
         }
 
@@ -107,6 +107,21 @@
         .field-input::placeholder { color: #b5aea3; }
 
         textarea.field-input { resize: none; }
+
+        /* ---- MODEL SELECTOR ---- */
+        .glass-panel {
+            background: var(--paper); border: 1.5px solid var(--border);
+            border-radius: 16px; margin-bottom: 16px; padding: 16px;
+        }
+        .model-chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .model-chip {
+            background: var(--white); border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: var(--muted);
+            cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+            flex-grow: 1; text-align: center;
+        }
+        .model-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+        .model-chip.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
 
         .btn-primary {
             width: 100%; background: var(--ink); color: var(--white);
@@ -124,7 +139,7 @@
             border: none; border-radius: 12px; padding: 11px 20px;
             font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
             cursor: pointer; transition: background 0.2s;
-            display: flex; align-items: center; gap: 8px; white-space: nowrap;
+            display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
         }
         .btn-secondary:hover:not(:disabled) { background: #e8d0b8; }
         .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -149,6 +164,8 @@
         .select-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201,119,58,0.12); }
         .select-input:disabled { opacity: 0.5; }
 
+        .load-row { display: flex; gap: 10px; }
+
         /* ---- LOADING SPINNER ---- */
         .loading-wrap {
             display: none; flex-direction: column; align-items: center;
@@ -161,7 +178,7 @@
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-msg { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+        .loading-msg { font-size: 0.85rem; color: var(--muted); font-weight: 500; text-align: center; }
 
         /* ---- HEADER ---- */
         #main-header {
@@ -207,7 +224,7 @@
             font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700;
             color: var(--ink); display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
         }
-        .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 28px; }
+        .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
         .budget-card {
             background: var(--white); border: 1.5px solid var(--border); border-radius: 16px;
             padding: 16px; display: flex; align-items: center; gap: 12px;
@@ -384,12 +401,6 @@
         #save-indicator.show { opacity: 1; }
         #save-indicator.error { color: #dc2626; border-color: #fca5a5; }
 
-        /* ---- NO TRIPS EMPTY STATE ---- */
-        .empty-state {
-            text-align: center; padding: 28px 0 12px;
-            font-size: 0.85rem; color: var(--muted);
-        }
-
         /* ---- RETRY BUTTON ---- */
         .retry-btn {
             font-size: 0.75rem; font-weight: 600; color: var(--accent);
@@ -397,12 +408,21 @@
             font-family: 'DM Sans', sans-serif; padding: 0; margin-top: 4px; display: block;
         }
 
-        /* ---- RESPONSIVE ---- */
+        /* ---- RESPONSIVE MOBILE FIXES ---- */
         @media (max-width: 600px) {
             .landing-card { padding: 24px 20px; }
-            .budget-grid { grid-template-columns: 1fr 1fr; }
             .header-title { font-size: 1.2rem; }
             .expense-total { font-size: 1.4rem; }
+            
+            /* Prevent squished load button */
+            .load-row { flex-direction: column; }
+            .load-row .btn-secondary { width: 100%; }
+
+            /* Prevent squished budget cards */
+            .budget-grid { grid-template-columns: 1fr; } 
+
+            .event-row { gap: 8px; }
+            .expense-field { width: 64px; }
         }
     </style>
 </head>
@@ -441,9 +461,20 @@
                 </div>
             </div>
 
-            <div style="margin-bottom:12px;">
+            <div style="margin-bottom:16px;">
                 <label class="field-label">Your Trip Idea</label>
                 <textarea id="trip-prompt" class="field-input" style="height:90px;" placeholder="A foodie trip to Penang focusing on hawker centres, street art, and old town cafes. Include links."></textarea>
+            </div>
+
+            <div class="glass-panel">
+                <p class="field-label" style="margin-bottom: 8px;">> SELECT CORE ENGINE:</p>
+                <div class="model-chip-group">
+                    <button type="button" class="model-chip" data-value="gemini-2.0-flash">2.0 FLASH</button>
+                    <button type="button" class="model-chip" data-value="gemini-2.5-flash">2.5 FLASH</button>
+                    <button type="button" class="model-chip" data-value="gemini-2.5-pro">2.5 PRO</button>
+                    <button type="button" class="model-chip active" data-value="gemini-3-flash-preview">3 FLASH (NEXT)</button>
+                </div>
+                <input type="hidden" id="modelSelect" value="gemini-3-flash-preview">
             </div>
 
             <button id="generate-btn" onclick="generateTrip()" class="btn-primary">
@@ -455,7 +486,7 @@
 
         <div>
             <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Load Saved Trip</p>
-            <div style="display:flex;gap:10px;">
+            <div class="load-row">
                 <select id="saved-trips-dropdown" class="select-input" disabled>
                     <option value="">Fetching saved trips…</option>
                 </select>
@@ -537,6 +568,27 @@ let activeFilter = 'all';
 let openMaps = new Set();
 let mapInstances = {};
 let saveTimeout = null;
+
+// ============================================================
+//  UI INTERACTIONS (DOM Ready)
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+    fetchTrips();
+    if (window.innerWidth > 500) {
+        document.getElementById('ai-edit-label').style.display = 'inline';
+    }
+
+    // Model Selector Logic
+    document.querySelectorAll('.model-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            const group = e.target.closest('.model-chip-group');
+            group.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('modelSelect').value = e.target.dataset.value;
+        });
+    });
+});
 
 // ============================================================
 //  THEME PALETTE
@@ -637,14 +689,6 @@ function hideLoading() {
 // ============================================================
 //  FETCH TRIPS
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
-    fetchTrips();
-    if (window.innerWidth > 500) {
-        document.getElementById('ai-edit-label').style.display = 'inline';
-    }
-});
-
 async function fetchTrips() {
     const dropdown = document.getElementById('saved-trips-dropdown');
     const statusEl = document.getElementById('trips-status');
@@ -711,6 +755,7 @@ async function generateTrip() {
     const prompt = document.getElementById('trip-prompt').value.trim();
     const dates  = document.getElementById('trip-dates').value.trim() || 'TBD';
     const pax    = document.getElementById('trip-pax').value.trim() || '1';
+    const selectedModel = document.getElementById('modelSelect').value;
 
     if (!prompt) {
         showToast('Please describe your trip first!', 'warning');
@@ -722,7 +767,7 @@ async function generateTrip() {
     try {
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'generate', prompt, dates, pax })
+            body: JSON.stringify({ action: 'generate', prompt, dates, pax, model: selectedModel })
         });
         const result = await response.json();
         if (result.success) {
@@ -751,6 +796,7 @@ function toggleChatModal() {
 
 async function submitEdit() {
     const editPrompt = document.getElementById('edit-prompt').value.trim();
+    const selectedModel = document.getElementById('modelSelect').value;
     if (!editPrompt) return;
 
     const btn = document.getElementById('submit-edit-btn');
@@ -761,7 +807,7 @@ async function submitEdit() {
     try {
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'edit', prompt: editPrompt, currentData: tripData })
+            body: JSON.stringify({ action: 'edit', prompt: editPrompt, currentData: tripData, model: selectedModel })
         });
         const result = await response.json();
         if (result.success) {
